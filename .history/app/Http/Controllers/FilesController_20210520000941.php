@@ -1,0 +1,102 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use App\Models\File;
+use Validator;
+class FilesController extends Controller
+{
+    public function index()
+    {
+        return File::all();
+    }
+    public function store(Request $request)
+    {
+        
+
+    //     $validator = Validator::make($request->all(), 
+    //     [ 
+    //     'bucket_id' => 'required',
+    //     'file' => 'required|mimes:doc,docx,pdf,txt|max:2048',
+    //    ]);   
+
+        // if ($validator->fails()) {          
+        //     return response()->json(['error'=>$validator->errors()], 401);                        
+        // }  
+        
+         if ($files = $request->file('file')->getClientOriginalName()) {
+             
+            //store file into document folder
+            $file = $request->file->store('/public/documents');
+            //store your file into database
+            $document = new File();
+            $document->name = $file;
+            $document->bucket_id = $request->bucket_id;
+            
+            $document->save();
+              
+            return response()->json([
+                "success" => true,
+                "message" => "File successfully uploaded",
+                "file" => $file
+            ]);
+  
+        }
+
+
+
+        if($request->hasFile('file')){
+            $images = $request->file('file');
+
+            foreach($images as $image){
+                    // Get file original name
+                    $image->getClientOriginalName();
+                    // Get file extsnion
+                    $filename_ext = $image->getClientOriginalExtension();
+                    // generate random uid
+                    $rand = uniqid() . date('d');
+                    // set new file name + 
+                    $image_name = md5($image) . "-" .  $rand . "." . $filename_ext;
+
+                    // FIle upload path
+                    $destinationPath = public_path('/public/documents');
+                    $img = Image::make($image->path());
+                    $img->resize(1024 , 768, function ($constraint) {
+
+                    $constraint->aspectRatio();
+                    })->save($destinationPath.'/'.$image_name);
+                    
+                    $photo= new Photo();
+                    $photo->property_id=$property->id;
+                    $photo->photo=$image_name;
+                    $photo->save();
+            }
+           
+
+        }
+        
+
+    }
+    public function destroy($id)
+    {
+    
+        return File::destroy($id);
+        return "Success";
+
+    }
+    public function show($id)
+    {
+        return File::find($id);
+    }
+
+    public function bucket_id($id) {
+ 
+        return File::query()
+        ->where('bucket_id', '=', $id) 
+        ->get();
+
+        // return Album::where('artist', '=', 'Something Corporate')
+        // ->get();
+    }
+}
